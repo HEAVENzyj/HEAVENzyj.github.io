@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>零食销售数据分析看板</title>
+    <script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
+    <script>
+        // ECharts加载失败处理
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .kpi-title {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .kpi-trend {
+            font-size: 0.9em;
+            padding: 4px 8px;
+            border-radius: 15px;
+            margin-top: 5px;
+        }
+
+        .trend-up {
+            background-color: #e8f5e8;
+            color: #28a745;
+        }
+
+        .trend-down {
+            background-color: #fdeaea;
+            color: #dc3545;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 400px;
+        }
+
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+            height: 500px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .kpi-value {
+                font-size: 2em;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>零食销售数据分析看板</h1>
+            <p>实时监控销售业绩，洞察市场趋势，优化经营策略</p>
+        </div>
+
+        <div class="kpi-section">
+            <div class="kpi-card">
+                <div class="kpi-title">总销售额</div>
+                <div class="kpi-value">¥1,248,560</div>
+                <div class="kpi-trend trend-up">↑ 12.5% 同比增长</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">总订单数</div>
+                <div class="kpi-value">15,842</div>
+                <div class="kpi-trend trend-up">↑ 8.3% 同比增长</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">平均客单价</div>
+                <div class="kpi-value">¥78.82</div>
+                <div class="kpi-trend trend-up">↑ 3.9% 同比增长</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">转化率</div>
+                <div class="kpi-value">24.6%</div>
+                <div class="kpi-trend trend-down">↓ 1.2% 同比变化</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">月度销售趋势图</div>
+                <div id="salesTrendChart" style="width: 100%; height: 350px;"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">产品类别销售占比</div>
+                <div id="categoryPieChart" style="width: 100%; height: 350px;"></div>
+            </div>
+            <div class="chart-container full-width">
+                <div class="chart-title">各地区销售额分布</div>
+                <div id="regionBarChart" style="width: 100%; height: 450px;"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">热销商品TOP10</div>
+                <div id="topProductsChart" style="width: 100%; height: 350px;"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">客户购买时段分析</div>
+                <div id="timeAnalysisChart" style="width: 100%; height: 350px;"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>数据更新时间：2024年12月 | 零售业数据分析平台</p>
+        </div>
+    </div>
+
+    <script>
+        // 确保ECharts已加载
+        function initCharts() {
+            if (typeof echarts === 'undefined') {
+                setTimeout(initCharts, 100);
+                return;
+            }
+
+            // 月度销售趋势图
+            const salesTrendChart = echarts.init(document.getElementById('salesTrendChart'));
+            salesTrendChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}<br/>{a}: ¥{c}万'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        formatter: '{value}万'
+                    }
+                },
+                series: [{
+                    name: '销售额',
+                    type: 'line',
+                    data: [85, 92, 105, 112, 128, 145, 162, 158, 142, 135, 148, 156],
+                    smooth: true,
+                    lineStyle: {
+                        color: '#667eea'
+                    },
+                    itemStyle: {
+                        color: '#667eea'
+                    }
+                }]
+            });
+
+            // 产品类别销售占比饼图
+            const categoryPieChart = echarts.init(document.getElementById('categoryPieChart'));
+            categoryPieChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'right'
+                },
+                series: [{
+                    name: '销售占比',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: [
+                        { value: 350, name: '膨化食品' },
+                        { value: 280, name: '糖果巧克力' },
+                        { value: 220, name: '坚果炒货' },
+                        { value: 180, name: '饼干糕点' },
+                        { value: 150, name: '饮料' },
+                        { value: 120, name: '肉制品' }
+                    ],
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            });
+
+            // 各地区销售额柱状图
+            const regionBarChart = echarts.init(document.getElementById('regionBarChart'));
+            regionBarChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['华东', '华南', '华北', '华中', '西南', '西北', '东北'],
+                    axisLabel: {
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        formatter: '{value}万'
+                    }
+                },
+                series: [{
+                    name: '销售额',
+                    type: 'bar',
+                    data: [280, 245, 210, 195, 175, 140, 130],
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#83bff6' },
+                            { offset: 0.5, color: '#188df0' },
+                            { offset: 1, color: '#188df0' }
+                        ])
+                    }
+                }]
+            });
+
+            // 热销商品TOP10
+            const topProductsChart = echarts.init(document.getElementById('topProductsChart'));
+            topProductsChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value'
+                },
+                yAxis: {
+                    type: 'category',
+                    data: ['薯片', '巧克力', '坚果', '饼干', '可乐', '辣条', '果冻', '棒棒糖', '瓜子', '奶茶']
+                },
+                series: [{
+                    name: '销量',
+                    type: 'bar',
+                    data: [12500, 11800, 10200, 9800, 9200, 8800, 8500, 8200, 7900, 7600],
+                    itemStyle: {
+                        color: '#764ba2'
+                    }
+                }]
+            });
+
+            // 客户购买时段分析
+            const timeAnalysisChart = echarts.init(document.getElementById('timeAnalysisChart'));
+            timeAnalysisChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}时<br/>{a}: {c}%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['0-2', '3-5', '6-8', '9-11', '12-14', '15-17', '18-20', '21-23']
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        formatter: '{value}%'
+                    }
+                },
+                series: [{
+                    name: '购买比例',
+                    type: 'bar',
+                    data: [3, 2, 8, 15, 12, 18, 25, 17],
+                    itemStyle: {
+                        color: '#f093fb'
+                    }
+                }]
+            });
+
+            // 响应式处理
+            window.addEventListener('resize', function() {
+                salesTrendChart.resize();
+                categoryPieChart.resize();
+                regionBarChart.resize();
+                topProductsChart.resize();
+                timeAnalysisChart.resize();
+            });
+        }
+        
+        // 页面加载完成后初始化图表
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCharts);
+        } else {
+            initCharts();
+        }
+    </script>
+</body>
+</html>
