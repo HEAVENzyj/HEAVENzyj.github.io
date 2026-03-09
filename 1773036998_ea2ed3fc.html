@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公司进货数据分析看板</title>
+    <script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
+    <script>
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eaeef5;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .kpi-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .kpi-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            height: 400px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            width: 100%;
+            height: 350px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            border-top: 1px solid #eaeef5;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 350px;
+            }
+            
+            .chart-wrapper {
+                height: 300px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>公司进货数据分析看板</h1>
+            <p>2024年与2025年进货数量对比分析</p>
+        </div>
+
+        <div class="kpi-section">
+            <div class="kpi-card">
+                <div class="kpi-value">398</div>
+                <div class="kpi-label">2024年总进货量</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value">600</div>
+                <div class="kpi-label">2025年总进货量</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value">150.75%</div>
+                <div class="kpi-label">同比增长率</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value">132</div>
+                <div class="kpi-label">参与公司数</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">2024年各月进货趋势</div>
+                <div id="monthly2024Chart" class="chart-wrapper"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">2025年各月进货趋势</div>
+                <div id="monthly2025Chart" class="chart-wrapper"></div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Top 10 进货量公司排名</div>
+                <div id="topCompaniesChart" class="chart-wrapper"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">年度进货量对比</div>
+                <div id="yearlyComparisonChart" class="chart-wrapper"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>数据更新时间：2024年 | 数据来源：进货管理系统</p>
+        </div>
+    </div>
+
+    <script>
+        function initCharts() {
+            if (typeof echarts === 'undefined') {
+                setTimeout(initCharts, 100);
+                return;
+            }
+
+            // 原始数据处理
+            const rawData = [
+                ["方程", NaN, 20, NaN, NaN, 1, 50, 6, 0, 1, 78, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 0, 78],
+                ["江苏十三城科技有限公司", NaN, 3, 16, NaN, 11, 1, 9, 9, 12, 61, 2, 1, 3, 2, NaN, 2, NaN, NaN, NaN, NaN, NaN, NaN, 10, 71],
+                ["南京约格商贸有限公司", NaN, NaN, NaN, NaN, 10, 6, 12, 11, 4, 43, 2, NaN, NaN, 2, 2, 2, NaN, NaN, NaN, NaN, NaN, NaN, 8, 51],
+                ["南京实开冷暖设备有限公司（刘威）", NaN, NaN, NaN, NaN, NaN, NaN, NaN, 11, 12, 23, 1, 15, NaN, NaN, 2, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 18, 41],
+                ["苏安宝", NaN, 2, 1, 6, 6, 1, 4, 5, 2, 27, 1, NaN, 2, 4, 1, 1, NaN, NaN, NaN, NaN, NaN, NaN, 9, 36],
+                ["南京程美冷暖设备有限公司", NaN, NaN, 3, NaN, 5, NaN, NaN, 10, NaN, 18, NaN, 15, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 15, 33],
+                ["南京华威王华忠", NaN, NaN, NaN, NaN, NaN, NaN, NaN, 4, 7, 11, NaN, 15, 1, 1, 2, 3, NaN, NaN, NaN, NaN, NaN, NaN, 22, 33],
+                ["南京燕兴能源科技有限公司", NaN, 4, NaN, 3, 1, 5, 1, 5, 2, 21, 2, 1, NaN, 2, 2, 2, NaN, NaN, NaN, NaN, NaN, NaN, 9, 30],
+                ["南京悦想家冷暖设备有限公司", NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 15, 15, 2, 1, 3, 1, 1, 2, NaN, NaN, NaN, NaN, NaN, NaN, 10, 25],
+                ["江苏千行环境工程有限公司（孙祥）", NaN, NaN, NaN, NaN, NaN, NaN, 1, 6, 9, 16, 1, NaN, NaN, 1, NaN, 2, NaN, NaN, NaN, NaN, NaN, NaN, 4, 20],
+                ["南京沐卡暖通工程有限公司（葛瑞）", NaN, NaN, NaN, NaN, NaN, NaN, NaN, 2, 3, 5, 1, 1, 4, 1, 2, 2, NaN, NaN, NaN, NaN, NaN, NaN, 11, 16],
+                ["南京乐宇机电设备有限公司", NaN, NaN, NaN, NaN, NaN, 2, 3, 1, 2, 8, 1, NaN, 1, 1, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 3, 11],
+                ["南京迪优冷暖设备有限公司", NaN, NaN, 1, NaN, NaN, NaN, NaN, 2, 1, 4, NaN, 7, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 7, 11],
+                ["南京艾尚冷暖设备有限公司胡成龙", NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 0, 1, NaN, 2, 1, 1, 6, NaN, NaN, NaN, NaN, NaN, NaN, 11, 11],
+                ["南京汇暖佳冷暖设备有限公司", NaN, NaN, NaN, NaN, NaN, NaN, NaN, 1, 9, 10, NaN, NaN, NaN, NaN, NaN, 1, NaN, NaN, NaN, NaN, NaN, NaN, 1, 11],
+                ["南京隽逸机电设备有限公司", NaN, NaN, NaN, NaN, NaN, 2, NaN, 1, 1, 4, 2, NaN, NaN, 1, NaN, 1, NaN, NaN, NaN, NaN, NaN, NaN, 4, 8],
+                ["南京云樵机电设备有限公司", NaN, NaN, NaN, 1, 1, 1, NaN, NaN, NaN, 3, NaN, 1, 1, NaN, 1, 2, NaN, NaN, NaN, NaN, NaN, NaN, 5, 8],
+                ["刘富银", NaN, NaN, 1, NaN, NaN, NaN, NaN, 1, NaN, 2, NaN, 1, 1, 2, NaN, 2, NaN, NaN, NaN, NaN, NaN, NaN, 6, 8],
+                ["金特威工程设备（南京）有限公司", NaN, NaN, NaN, NaN, NaN, NaN, NaN, 4, 1, 5, 1, NaN, 1, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 2, 7],
+                ["南京名川能源科技有限公司", NaN, NaN, 5, NaN, NaN, NaN, 1, 1, NaN, 7, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 0, 7]
+            ];
+
+            // 计算各月汇总数据
+            const monthly2024Data = [0, 31, 29, 14, 38, 72, 48, 76, 90, 398];
+            const monthly2025Data = [21, 63, 28, 28, 23, 39, 0, 0, 0, 0, 0, 0, 202];
+
+            // 生成Top 10公司数据
+            const companyTotals = rawData.map(row => ({
+                name: row[0],
+                total: row[row.length - 1] || 0
+            })).filter(item => item.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+
+            // 2024年月度趋势图
+            const monthly2024Chart = echarts.init(document.getElementById('monthly2024Chart'));
+            monthly2024Chart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}月: {c}'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '合计']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    data: monthly2024Data,
+                    type: 'line',
+                    smooth: true,
+                    itemStyle: { color: '#667eea' },
+                    areaStyle: { opacity: 0.3 }
+                }]
+            });
+
+            // 2025年月度趋势图
+            const monthly2025Chart = echarts.init(document.getElementById('monthly2025Chart'));
+            monthly2025Chart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}: {c}'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '合计']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    data: monthly2025Data,
+                    type: 'line',
+                    smooth: true,
+                    itemStyle: { color: '#764ba2' },
+                    areaStyle: { opacity: 0.3 }
+                }]
+            });
+
+            // Top 10公司排名图
+            const topCompaniesChart = echarts.init(document.getElementById('topCompaniesChart'));
+            topCompaniesChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}'
+                },
+                xAxis: {
+                    type: 'value'
+                },
+                yAxis: {
+                    type: 'category',
+                    data: companyTotals.map(item => item.name),
+                    axisLabel: { fontSize: 10 }
+                },
+                series: [{
+                    data: companyTotals.map(item => item.total),
+                    type: 'bar',
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#667eea' },
+                            { offset: 1, color: '#764ba2' }
+                        ])
+                    }
+                }]
+            });
+
+            // 年度对比图
+            const yearlyComparisonChart = echarts.init(document.getElementById('yearlyComparisonChart'));
+            yearlyComparisonChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}'
+                },
+                legend: {
+                    data: ['2024年', '2025年']
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['总计']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: '2024年',
+                        type: 'bar',
+                        data: [398],
+                        itemStyle: { color: '#667eea' }
+                    },
+                    {
+                        name: '2025年',
+                        type: 'bar',
+                        data: [600],
+                        itemStyle: { color: '#764ba2' }
+                    }
+                ]
+            });
+
+            // 响应式处理
+            window.addEventListener('resize', () => {
+                monthly2024Chart.resize();
+                monthly2025Chart.resize();
+                topCompaniesChart.resize();
+                yearlyComparisonChart.resize();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCharts);
+        } else {
+            initCharts();
+        }
+    </script>
+</body>
+</html>
