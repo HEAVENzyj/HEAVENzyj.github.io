@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BI数据看板设计与开发专家</title>
+    <script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
+    <script>
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 6px solid #3498db;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .kpi-card:nth-child(2) {
+            border-left-color: #2ecc71;
+        }
+
+        .kpi-card:nth-child(3) {
+            border-left-color: #e74c3c;
+        }
+
+        .kpi-card:nth-child(4) {
+            border-left-color: #f39c12;
+        }
+
+        .kpi-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+
+        .kpi-card:nth-child(2) .kpi-icon {
+            color: #2ecc71;
+        }
+
+        .kpi-card:nth-child(3) .kpi-icon {
+            color: #e74c3c;
+        }
+
+        .kpi-card:nth-child(4) .kpi-icon {
+            color: #f39c12;
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+
+        .kpi-label {
+            font-size: 1rem;
+            color: #7f8c8d;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card.wide {
+            grid-column: span 8;
+        }
+
+        .chart-card.medium {
+            grid-column: span 6;
+        }
+
+        .chart-card.narrow {
+            grid-column: span 4;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .chart-subtitle {
+            font-size: 0.95rem;
+            color: #95a5a6;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-height: 350px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            border-top: 1px solid #ddd;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-card.wide {
+                grid-column: span 12;
+            }
+            .chart-card.medium {
+                grid-column: span 12;
+            }
+            .chart-card.narrow {
+                grid-column: span 6;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            .header p {
+                font-size: 1rem;
+            }
+            .kpi-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .chart-card.narrow,
+            .chart-card.medium,
+            .chart-card.wide {
+                grid-column: span 12;
+            }
+            .chart-container {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-container {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                padding: 20px;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header">
+            <h1>BI数据看板设计与开发专家</h1>
+            <p>将复杂的Excel数据转化为清晰、直观、交互性强的商业智能看板，驱动数据驱动的决策。</p>
+        </header>
+
+        <section class="kpi-container">
+            <div class="kpi-card">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-value">100%</div>
+                <div class="kpi-label">数据可视化覆盖率</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">⚡</div>
+                <div class="kpi-value">&lt;1s</div>
+                <div class="kpi-label">图表渲染速度</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📱</div>
+                <div class="kpi-value">全适配</div>
+                <div class="kpi-label">响应式设计</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">🔄</div>
+                <div class="kpi-value">10+</div>
+                <div class="kpi-label">图表类型支持</div>
+            </div>
+        </section>
+
+        <section class="charts-grid">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">核心技术栈掌握度</div>
+                        <div class="chart-subtitle">HTML5, CSS3, JavaScript, ECharts.js 等</div>
+                    </div>
+                </div>
+                <div id="chart1" class="chart-container"></div>
+            </div>
+
+            <div class="chart-card medium">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">工作流程效率分布</div>
+                        <div class="chart-subtitle">从数据分析到看板交付的各环节耗时占比</div>
+                    </div>
+                </div>
+                <div id="chart2" class="chart-container"></div>
+            </div>
+
+            <div class="chart-card medium">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">项目类型分布</div>
+                        <div class="chart-subtitle">过往承接的各类BI看板项目数量</div>
+                    </div>
+                </div>
+                <div id="chart3" class="chart-container"></div>
+            </div>
+
+            <div class="chart-card narrow">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">交互功能支持</div>
+                        <div class="chart-subtitle">已实现的交互特性</div>
+                    </div>
+                </div>
+                <div id="chart4" class="chart-container"></div>
+            </div>
+
+            <div class="chart-card narrow">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">设备适配度</div>
+                        <div class="chart-subtitle">看板在不同设备上的完美显示率</div>
+                    </div>
+                </div>
+                <div id="chart5" class="chart-container"></div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2023 BI数据看板设计与开发专家 | 使命：让数据讲述动人的故事，让洞察触手可及。</p>
+        </footer>
+    </div>
+
+    <script>
+        function initCharts() {
+            if (typeof echarts === 'undefined') {
+                setTimeout(initCharts, 100);
+                return;
+            }
+
+            const echartsInstance = echarts.init(document.getElementById('chart1'));
+            const option1 = {
+                color: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6'],
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' }
+                },
+                legend: {
+                    data: ['精通程度', '使用频率'],
+                    top: 10
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '20%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    max: 100,
+                    axisLabel: {
+                        formatter: '{value}%'
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: ['ECharts.js', 'JavaScript', 'CSS3/Grid', 'HTML5', '数据解析']
+                },
+                series: [
+                    {
+                        name: '精通程度',
+                        type: 'bar',
+                        data: [95, 90, 88, 85, 92],
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: '{c}%'
+                        }
+                    },
+                    {
+                        name: '使用频率',
+                        type: 'bar',
+                        data: [100, 100, 95, 100, 90]
+                    }
+                ]
+            };
+            echartsInstance.setOption(option1);
+
+            const chart2 = echarts.init(document.getElementById('chart2'));
+            const option2 = {
+                color: ['#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'],
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c}小时 ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    data: ['数据清洗与解析', '图表设计与选型', '前端编码开发', '交互逻辑实现', '测试与优化']
+                },
+                series: [
+                    {
+                        name: '工作流程',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: false,
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '18',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: [
+                            { value: 8, name: '数据清洗与解析' },
+                            { value: 6, name: '图表设计与选型' },
+                            { value: 15, name: '前端编码开发' },
+                            { value: 10, name: '交互逻辑实现' },
+                            { value: 5, name: '测试与优化' }
+                        ]
+                    }
+                ]
+            };
+            chart2.setOption(option2);
+
+            const chart3 = echarts.init(document.getElementById('chart3'));
+            const option3 = {
+                color: ['#3498db'],
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        data: ['销售业绩', '运营监控', '财务分析', '供应链', '人力资源', '市场营销'],
+                        axisTick: {
+                            alignWithLabel: true
+                        }
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: '项目数量'
+                    }
+                ],
+                series: [
+                    {
+                        name: '项目数量',
+                        type: 'bar',
+                        barWidth: '60%',
+                        data: [24, 18, 15, 12, 10, 20],
+                        itemStyle: {
+                            borderRadius: [5, 5, 0, 0]
+                        }
+                    }
+                ]
+            };
+            chart3.setOption(option3);
+
+            const chart4 = echarts.init(document.getElementById('chart4'));
+            const option4 = {
+                color: ['#2ecc71'],
+                radar: {
+                    indicator: [
+                        { name: '图表联动', max: 100 },
+                        { name: '数据下钻', max: 100 },
+                        { name: '悬停提示', max: 100 },
+                        { name: '时间筛选', max: 100 },
+                        { name: '条件高亮', max: 100 },
+                        { name: '导出分享', max: 100 }
+                    ],
+                    shape: 'circle',
+                    splitNumber: 5,
+                    axisName: {
+                        color: '#555'
+                    }
+                },
+                series: [
+                    {
+                        name: '交互功能',
+                        type: 'radar',
+                        data: [
+                            {
+                                value: [95, 90, 100, 85, 88, 80],
+                                name: '支持度',
+                                areaStyle: {
+                                    color: 'rgba(46, 204, 113, 0.3)'
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+            chart4.setOption(option4);
+
+            const chart5 = echarts.init(document.getElementById('chart5'));
+            const option5 = {
+                color: ['#f39c12'],
+                angleAxis: {
+                    max: 100,
+                    startAngle: 90
+                },
+                radiusAxis: {
+                    type: 'category',
+                    data: ['桌面电脑', '平板电脑', '智能手机'],
+                    z: 10
+                },
+                polar: {},
+                series: [
+                    {
+                        type: 'bar',
+                        data: [100, 98, 96],
+                        coordinateSystem: 'polar',
+                        name: '适配度',
+                        roundCap: true,
+                        label: {
+                            show: true,
+                            position: 'middle',
+                            formatter: '{c}%'
+                        }
+                    }
+                ],
+                legend: {
+                    show: true,
+                    data: ['适配度']
+                }
+            };
+            chart5.setOption(option5);
+
+            window.addEventListener('resize', function() {
+                echartsInstance.resize();
+                chart2.resize();
+                chart3.resize();
+                chart4.resize();
+                chart5.resize();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCharts);
+        } else {
+            initCharts();
+        }
+    </script>
+</body>
+</html>
